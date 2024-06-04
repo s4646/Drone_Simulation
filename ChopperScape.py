@@ -5,9 +5,11 @@ import random
 import numpy as np 
 from Map import Map
 import PIL.Image as Image
+from IPython import display
 from gym import Env, spaces
 from Chopper import Chopper
 import matplotlib.pyplot as plt
+
 
 font = cv2.FONT_HERSHEY_COMPLEX_SMALL
 
@@ -61,10 +63,10 @@ class ChopperScape(Env):
         # Init the canvas 
         self.canvas = np.ones(self.observation_shape) * 1
         
-        w, h, _ = self.canvas.shape
-        for x in range(w):
-            for y in range(h):
-                self.canvas[x, y] = self.map.map[x, y]
+        h, w, _ = self.canvas.shape
+        for y in range(h):
+            for x in range(w):
+                self.canvas[y, x] = self.map.map[y, x]
 
     def reset(self):
         # Reset the fuel consumed
@@ -78,14 +80,14 @@ class ChopperScape(Env):
         self.fuel_count = 0
 
         # Determine a place to intialise the chopper in
-        # x = random.randrange(int(self.observation_shape[0] * 0.05), int(self.observation_shape[0] * 0.10))
-        # y = random.randrange(int(self.observation_shape[1] * 0.15), int(self.observation_shape[1] * 0.20))
         x = 100
         y = 50
         
         # Intialise the chopper
-        self.chopper = Chopper("chopper", self.x_max, self.x_min, self.y_max, self.y_min)
-        self.chopper.set_position(x,y)
+        self.chopper = Chopper("chopper")
+        self.chopper.set_position(y, x)
+        self.chopper.set_tips()
+        self.chopper.set_sensors()
 
         # Intialise the elements 
         self.elements = [self.chopper]
@@ -112,10 +114,84 @@ class ChopperScape(Env):
     def close(self):
         cv2.destroyAllWindows()
 
+    def get_action_meanings(self):
+        return {0: "Up", 1: "Right", 2: "Down", 3: "Left"} #, 4: "Do Nothing"}
+
+    def has_collided(self):
+        tips = self.chopper.tips
+        temp = self.map.map[tips[0][0], tips[0][1]]
+        if self.map.is_black(tips[0][0], tips[0][1]): return True
+        elif self.map.is_black(tips[1][0], tips[1][1]): return True
+        elif self.map.is_black(tips[2][0], tips[2][1]): return True
+        elif self.map.is_black(tips[3][0], tips[3][1]): return True
+        else: return False
+
+    def step(self, action):
+        # Flag that marks the termination of an episode
+        done = False
+        
+        # Assert that it is a valid action 
+        assert self.action_space.contains(action), "Invalid Action"
+
+        # Decrease the fuel counter 
+        self.fuel_left -= 1 
+        
+        # Reward for executing a step.
+        reward = 1      
+
+        # apply the action to the chopper
+        if action == 0:
+            self.chopper.move(-2, 0)
+        elif action == 1:
+            self.chopper.move(0, 2)
+        elif action == 2:
+            self.chopper.move(2, 0)
+        elif action == 3:
+            self.chopper.move(0, -2)
+        self.chopper.set_tips()
+        self.chopper.set_sensors()
+
+        # If chopper has collided
+        if self.has_collided():
+            # Conclude the episode and remove the chopper from the Env.
+            done = True
+            reward = -10
+            self.elements.remove(self.chopper)
+        
+        # Increment the episodic return
+        self.ep_return += 1
+
+        # Draw elements on the canvas
+        self.draw_elements_on_canvas()
+
+        # If out of fuel, end the episode.
+        if self.fuel_left == 0:
+            done = True
+
+        return self.canvas, reward, done, []
+
 if __name__ == "__main__":
     path_to_map = "pictures/maps/p11.png"
+    # env = ChopperScape(path_to_map)
+    # obs = env.reset()
+    # screen = env.render(mode = "rgb_array")
+    # plt.imshow(screen)
+    # plt.show()
+
     env = ChopperScape(path_to_map)
     obs = env.reset()
-    screen = env.render(mode = "rgb_array")
-    plt.imshow(screen)
-    plt.show()
+
+    while True:
+        # Take a random action
+        print(env.fuel_left)
+        action = env.action_space.sample()
+        obs, reward, done, info = env.step(action)
+
+        
+        # Render the game
+        env.render()
+        
+        if done == True:
+            break
+
+    env.close()

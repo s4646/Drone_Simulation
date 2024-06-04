@@ -1,16 +1,16 @@
 class Point(object):
-    def __init__(self, name, x_max, x_min, y_max, y_min):
+    def __init__(self, name):
         self.x = 0
         self.y = 0
         self.name = name
     
-    def set_position(self, x, y):
-        self.x = x
+    def set_position(self, y, x):
         self.y = y
+        self.x = x
     
     def get_position(self):
-        return (self.x, self.y)
+        return (self.y, self.x)
     
-    def move(self, del_x, del_y):
+    def move(self, del_y, del_x):
         self.x += del_x
         self.y += del_y
