@@ -9,7 +9,7 @@ class Map:
         # self.drone_start_point: tuple = drone_start_point
         self.img: Image = Image.open(path).convert('RGB')
         self.map: np.ndarray = self.render_map_from_image_to_boolean().transpose(1,0,2)
-        self.point_map: np.ndarray = self.create_point_map()
+        # self.point_map: np.ndarray = self.create_point_map()
 
     def render_map_from_image_to_boolean(self):
         w, h = self.img.size

@@ -43,7 +43,7 @@ class ChopperScape(Env):
 
     def draw_elements_on_canvas(self):
         # Init the canvas 
-        self.canvas = np.ones(self.observation_shape) * 1
+        # self.canvas = np.ones(self.observation_shape) * 1
 
         # Draw the heliopter on canvas
         for elem in self.elements:
@@ -55,7 +55,16 @@ class ChopperScape(Env):
 
         # Put the info on canvas 
         self.canvas = cv2.putText(self.canvas, text, (10,20), font,  
-                0.8, (0,0,0), 1, cv2.LINE_AA)
+                0.8, (255,255,0), 1, cv2.LINE_AA)
+        
+    def draw_map_on_canvas(self):
+        # Init the canvas 
+        self.canvas = np.ones(self.observation_shape) * 1
+        
+        w, h, _ = self.canvas.shape
+        for x in range(w):
+            for y in range(h):
+                self.canvas[x, y] = self.map.map[x, y]
 
     def reset(self):
         # Reset the fuel consumed
@@ -69,8 +78,10 @@ class ChopperScape(Env):
         self.fuel_count = 0
 
         # Determine a place to intialise the chopper in
-        x = random.randrange(int(self.observation_shape[0] * 0.05), int(self.observation_shape[0] * 0.10))
-        y = random.randrange(int(self.observation_shape[1] * 0.15), int(self.observation_shape[1] * 0.20))
+        # x = random.randrange(int(self.observation_shape[0] * 0.05), int(self.observation_shape[0] * 0.10))
+        # y = random.randrange(int(self.observation_shape[1] * 0.15), int(self.observation_shape[1] * 0.20))
+        x = 100
+        y = 50
         
         # Intialise the chopper
         self.chopper = Chopper("chopper", self.x_max, self.x_min, self.y_max, self.y_min)
@@ -83,6 +94,7 @@ class ChopperScape(Env):
         self.canvas = np.ones(self.observation_shape) * 1
 
         # Draw elements on the canvas
+        self.draw_map_on_canvas()
         self.draw_elements_on_canvas()
 
         # return the observation
