@@ -9,8 +9,12 @@ class Point(object):
         self.name = name
     
     def set_position(self, x, y):
-        self.x = self.clamp(x, self.x_min, self.x_max - self.icon_w)
-        self.y = self.clamp(y, self.y_min, self.y_max - self.icon_h)
+        try:
+            self.x = self.clamp(x, self.x_min, self.x_max - self.icon_w)
+            self.y = self.clamp(y, self.y_min, self.y_max - self.icon_h)
+        except AttributeError:
+            self.x = x
+            self.y = y
     
     def get_position(self):
         return (self.x, self.y)
