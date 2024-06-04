@@ -23,7 +23,7 @@ class Map:
         return map_array
 
     def is_collide(self, x, y):
-        return not self.map[x, y]
+        return self.map[x, y, :] == 0
 
     def create_point_map(self):
         w, h, _ = self.map.shape

@@ -49,7 +49,7 @@ class ChopperScape(Env):
         for elem in self.elements:
             elem_shape = elem.icon.shape
             x,y = elem.x, elem.y
-            self.canvas[y : y + elem_shape[1], x:x + elem_shape[0]] = elem.icon
+            self.canvas[int(y - elem_shape[1]/2) : int(y + elem_shape[1]/2), int(x - elem_shape[0]/2 ): int(x + elem_shape[0]/2)] = elem.icon
 
         text = 'Fuel Left: {} | Rewards: {}'.format(self.fuel_left, self.ep_return)
 
@@ -100,9 +100,22 @@ class ChopperScape(Env):
         # return the observation
         return self.canvas
     
+    def render(self, mode = "human"):
+        assert mode in ["human", "rgb_array"], "Invalid mode, must be either \"human\" or \"rgb_array\""
+        if mode == "human":
+            cv2.imshow("Simulation", self.canvas)
+            cv2.waitKey(10)
+        
+        elif mode == "rgb_array":
+            return self.canvas
+    
+    def close(self):
+        cv2.destroyAllWindows()
+
 if __name__ == "__main__":
-    path_to_image = "pictures/maps/p11.png"
-    env = ChopperScape(path_to_image)
+    path_to_map = "pictures/maps/p11.png"
+    env = ChopperScape(path_to_map)
     obs = env.reset()
-    plt.imshow(obs)
+    screen = env.render(mode = "rgb_array")
+    plt.imshow(screen)
     plt.show()
