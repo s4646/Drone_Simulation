@@ -27,7 +27,7 @@ class ChopperScape(Env):
                                             dtype = np.float16)
         
         # Define an action space ranging from 0 to 4
-        self.action_space = spaces.Discrete(6,)
+        self.action_space = spaces.Discrete(8,)
                         
         # Create a canvas to render the environment images upon 
         self.canvas = np.ones(self.observation_shape) * 1
@@ -54,7 +54,7 @@ class ChopperScape(Env):
             x,y = elem.x, elem.y
             self.canvas[int(y - elem_shape[1]/2) : int(y + elem_shape[1]/2), int(x - elem_shape[0]/2 ): int(x + elem_shape[0]/2)] = elem.icon
 
-        text = 'Fuel Left: {} | Rewards: {}'.format(self.fuel_left, self.ep_return)
+        text = 'Fuel Left: {} | Rewards: {} | Angle: {}'.format(self.fuel_left, self.ep_return, self.chopper.angle)
 
         # Put the info on canvas 
         self.canvas = cv2.putText(self.canvas, text, (10,20), font,  
@@ -91,8 +91,9 @@ class ChopperScape(Env):
         # Intialise the chopper
         self.chopper = Chopper("chopper")
         self.chopper.set_position(y, x)
-        self.chopper.set_tips()
-        self.chopper.set_sensors()
+        self.chopper.rotate_icon()
+        self.chopper.create_tips()
+        self.chopper.create_sensors()
 
         # Intialise the elements 
         self.elements = [self.chopper]
@@ -124,7 +125,6 @@ class ChopperScape(Env):
 
     def has_collided(self):
         tips = self.chopper.tips
-        temp = self.map.map[tips[0][0], tips[0][1]]
         if self.map.is_black(tips[0][0], tips[0][1]): return True
         elif self.map.is_black(tips[1][0], tips[1][1]): return True
         elif self.map.is_black(tips[2][0], tips[2][1]): return True
@@ -145,16 +145,26 @@ class ChopperScape(Env):
         reward = 1      
 
         # apply the action to the chopper
-        if action == 0:
-            self.chopper.move(-2, 0)
-        elif action == 1:
-            self.chopper.move(0, 2)
-        elif action == 2:
-            self.chopper.move(2, 0)
-        elif action == 3:
-            self.chopper.move(0, -2)
-        self.chopper.set_tips()
-        self.chopper.set_sensors()
+        match action:
+            case 0:
+                self.chopper.pitch()
+            case 1:
+                self.chopper.pitch(dir=False)
+            case 2:
+                self.chopper.roll()
+            case 3:
+                self.chopper.roll(dir=False)
+            case 4:
+                self.chopper.yaw()
+            case 5:
+                self.chopper.yaw(dir=False)
+            case _:
+                pass
+        
+        # Update chopper position
+        self.chopper.rotate_icon()
+        self.chopper.create_tips()
+        self.chopper.create_sensors()
 
         # If chopper has collided
         if self.has_collided():
@@ -188,16 +198,15 @@ if __name__ == "__main__":
     obs = env.reset()
 
     while True:
-        # Take a random action
+        key = cv2.waitKey(1) & 0xFF
         print(env.fuel_left)
-        action = env.action_space.sample()
+        action = int(chr(key) if key != 0xFF else 6)
         obs, reward, done, info = env.step(action)
 
-        
         # Render the game
         env.render(mode='human')
         env.canvas = np.ones(env.observation_shape) * 1
-        
+
         if done == True:
             break
 
