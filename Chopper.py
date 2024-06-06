@@ -1,13 +1,14 @@
 import cv2
 import math
+import numpy as np
 from Point import Point
 
 class Chopper(Point):
     def __init__(self, name):
         super(Chopper, self).__init__(name)
         self.icon = cv2.imread("pictures/drone.png") /255.0
-        self.icon_w = 20
-        self.icon_h = 20
+        self.icon_w = 12
+        self.icon_h = 12
         self.icon = cv2.resize(self.icon, (self.icon_h, self.icon_w))
         self.tips = []
         self.sensors = []
@@ -31,3 +32,9 @@ class Chopper(Point):
         west_sensor = int(y + math.sin(angle_rad) * pitch + math.cos(angle_rad) * roll), (x-self.icon_w-10) + int(math.cos(angle_rad) * pitch + math.sin(angle_rad) * roll)
         
         self.sensors = [north_sensor, east_sensor, south_sensor, west_sensor]
+    
+    def rotate_icon(self):
+        h, w = self.icon_h, self.icon_w
+        center = (w // 2, h // 2)
+        rot_mat = cv2.getRotationMatrix2D(center, self.angle, 1.0)
+        return cv2.warpAffine(self.icon, rot_mat, (w, h), flags=cv2.INTER_CUBIC, borderMode = cv2.BORDER_CONSTANT, borderValue=[255, 255, 255])

@@ -52,7 +52,7 @@ class ChopperScape(Env):
         for elem in self.elements:
             elem_shape = elem.icon.shape
             x,y = elem.x, elem.y
-            self.canvas[int(y - elem_shape[1]/2) : int(y + elem_shape[1]/2), int(x - elem_shape[0]/2 ): int(x + elem_shape[0]/2)] = elem.icon
+            self.canvas[int(y - elem_shape[1]/2) : int(y + elem_shape[1]/2), int(x - elem_shape[0]/2 ): int(x + elem_shape[0]/2)] = elem.rotate_icon()
 
         text = 'Fuel Left: {} | Rewards: {}'.format(self.fuel_left, self.ep_return)
 
@@ -118,14 +118,14 @@ class ChopperScape(Env):
         cv2.destroyAllWindows()
 
     def get_action_meanings(self):
-        return {0: f"Roll: {1}, Pitch: {1}, Yaw: {1}",
-                1: f"Roll: {1}, Pitch: {1}, Yaw: {-1}",
-                2: f"Roll: {1}, Pitch: {-1}, Yaw: {1}",
-                3: f"Roll: {1}, Pitch: {-1}, Yaw: {-1}",
-                4: f"Roll: {-1}, Pitch: {1}, Yaw: {1}",
-                5: f"Roll: {-1}, Pitch: {1}, Yaw: {-1}",
-                6: f"Roll: {-1}, Pitch: {-1}, Yaw: {1}",
-                7: f"Roll: {-1}, Pitch: {-1}, Yaw: {-1}"}
+        return {0: f"Roll: {1}, Pitch: {1}, Yaw: {15}",
+                1: f"Roll: {1}, Pitch: {1}, Yaw: {-15}",
+                2: f"Roll: {1}, Pitch: {-1}, Yaw: {15}",
+                3: f"Roll: {1}, Pitch: {-1}, Yaw: {-15}",
+                4: f"Roll: {-1}, Pitch: {1}, Yaw: {15}",
+                5: f"Roll: {-1}, Pitch: {1}, Yaw: {-15}",
+                6: f"Roll: {-1}, Pitch: {-1}, Yaw: {15}",
+                7: f"Roll: {-1}, Pitch: {-1}, Yaw: {-15}"}
 
     def has_collided(self):
         tips = self.chopper.tips
@@ -150,35 +150,35 @@ class ChopperScape(Env):
 
         # apply the action to the chopper
         if action == 0:
-            self.chopper.move(1, 1, 1)
+            self.chopper.move(1, 1, 15)
             self.chopper.create_tips(1, 1)
             self.chopper.create_sensors(1, 1)
         elif action == 1:
-            self.chopper.move(1, 1, -1)
+            self.chopper.move(1, 1, -15)
             self.chopper.create_tips(1, 1)
             self.chopper.create_sensors(1, 1)
         elif action == 2:
-            self.chopper.move(1, -1, 1)
+            self.chopper.move(1, -1, 15)
             self.chopper.create_tips(1, -1)
             self.chopper.create_sensors(1, -1)
         elif action == 3:
-            self.chopper.move(1, -1, -1)
+            self.chopper.move(1, -1, -15)
             self.chopper.create_tips(1, -1)
             self.chopper.create_sensors(1, -1)
         elif action == 4:
-            self.chopper.move(-1, 1, 1)
+            self.chopper.move(-1, 1, 15)
             self.chopper.create_tips(-1 ,1)
             self.chopper.create_sensors(-1, 1)
         elif action == 5:
-            self.chopper.move(-1, 1, -1)
+            self.chopper.move(-1, 1, -15)
             self.chopper.create_tips(-1, 1)
             self.chopper.create_sensors(-1, 1)
         elif action == 6:
-            self.chopper.move(-1, -1, 1)
+            self.chopper.move(-1, -1, 15)
             self.chopper.create_tips(-1 ,-1)
             self.chopper.create_sensors(-1, -1)
         elif action == 7:
-            self.chopper.move(-1, -1, -1)
+            self.chopper.move(-1, -1, -15)
             self.chopper.create_tips(-1, -1)
             self.chopper.create_sensors(-1, -1)
         
