@@ -4,6 +4,7 @@ import time
 import random
 import numpy as np 
 from Map import Map
+from numba import njit
 import PIL.Image as Image
 from IPython import display
 from gym import Env, spaces
@@ -59,14 +60,18 @@ class ChopperScape(Env):
         self.canvas = cv2.putText(self.canvas, text, (10,20), font,  
                 0.8, (255,255,0), 1, cv2.LINE_AA)
         
-    def draw_map_on_canvas(self):
+    @staticmethod
+    @njit
+    def draw_map_on_canvas(canvas: np.ndarray, map: np.ndarray):
         # Init the canvas 
-        self.canvas = np.ones(self.observation_shape) * 1
+        canvas = np.ones(map.shape) * 1
         
-        h, w, _ = self.canvas.shape
+        h, w, _ = canvas.shape
         for y in range(h):
             for x in range(w):
-                self.canvas[y, x] = self.map.map[y, x]
+                canvas[y, x] = map[y, x]
+        
+        return canvas
 
     def reset(self):
         # Reset the fuel consumed
@@ -96,7 +101,7 @@ class ChopperScape(Env):
         self.canvas = np.ones(self.observation_shape) * 1
 
         # Draw elements on the canvas
-        self.draw_map_on_canvas()
+        self.canvas = self.draw_map_on_canvas(self.canvas, self.map.map)
         self.draw_elements_on_canvas()
 
         # return the observation
@@ -162,6 +167,7 @@ class ChopperScape(Env):
         self.ep_return += 1
 
         # Draw elements on the canvas
+        self.canvas = self.draw_map_on_canvas(self.canvas, self.map.map)
         self.draw_elements_on_canvas()
 
         # If out of fuel, end the episode.
@@ -189,7 +195,8 @@ if __name__ == "__main__":
 
         
         # Render the game
-        env.render()
+        env.render(mode='human')
+        env.canvas = np.ones(env.observation_shape) * 1
         
         if done == True:
             break
