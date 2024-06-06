@@ -1,36 +1,33 @@
 import cv2
+import math
 from Point import Point
 
 class Chopper(Point):
     def __init__(self, name):
         super(Chopper, self).__init__(name)
         self.icon = cv2.imread("pictures/drone.png") /255.0
-        self.icon_w = 32
-        self.icon_h = 32
+        self.icon_w = 20
+        self.icon_h = 20
         self.icon = cv2.resize(self.icon, (self.icon_h, self.icon_w))
         self.tips = []
         self.sensors = []
 
-    def create_tips(self):
+    def create_tips(self, pitch, roll):
         y, x = self.get_position()
-        top_left = int(y-self.icon_h/2), int(x-self.icon_w/2)
-        top_right = int(y-self.icon_h/2), int(x+self.icon_w/2)
-        bootom_right = int(y+self.icon_h/2), int(x+self.icon_w/2)
-        bottom_left = int(y+self.icon_h/2), int(x-self.icon_w/2)
+        angle_rad = math.radians(self.angle)
+        top_left = int((y-self.icon_h//2) + math.sin(angle_rad) * pitch + math.cos(angle_rad) * roll), int((x-self.icon_w//2) + math.cos(angle_rad) * pitch + math.sin(angle_rad) * roll)
+        top_right = int((y-self.icon_h//2) + math.sin(angle_rad) * pitch + math.cos(angle_rad) * roll), int((x+self.icon_w//2) + math.cos(angle_rad) * pitch + math.sin(angle_rad) * roll)
+        bootom_right = int((y+self.icon_h//2) + math.sin(angle_rad) * pitch + math.cos(angle_rad) * roll), int((x+self.icon_w//2) + math.cos(angle_rad) * pitch + math.sin(angle_rad) * roll)
+        bottom_left = int((y+self.icon_h//2) + math.sin(angle_rad) * pitch + math.cos(angle_rad) * roll), int((x-self.icon_w//2) + math.cos(angle_rad) * pitch + math.sin(angle_rad) * roll)
         
-        return [top_left, top_right, bootom_right, bottom_left]
+        self.tips =  [top_left, top_right, bootom_right, bottom_left]
 
-    def create_sensors(self):
+    def create_sensors(self, pitch, roll):
         y, x = self.get_position()
-        north_sensor = int(y-self.icon_h-10), int(x)
-        east_sensor = int(y), int(x+self.icon_w+10)
-        south_sensor = int(y+self.icon_h+10), int(x)
-        west_sensor = int(y), int(x-self.icon_w-10)
+        angle_rad = math.radians(self.angle)
+        north_sensor = int((y-self.icon_h-10) + math.sin(angle_rad) * pitch + math.cos(angle_rad) * roll), int(x + math.cos(angle_rad) * pitch + math.sin(angle_rad) * roll)
+        east_sensor = int(y + math.sin(angle_rad) * pitch + math.cos(angle_rad) * roll), (x+self.icon_w+10) + int(math.cos(angle_rad) * pitch + math.sin(angle_rad) * roll)
+        south_sensor = int((y+self.icon_h+10) + math.sin(angle_rad) * pitch + math.cos(angle_rad) * roll), x + int(math.cos(angle_rad) * pitch + math.sin(angle_rad) * roll)
+        west_sensor = int(y + math.sin(angle_rad) * pitch + math.cos(angle_rad) * roll), (x-self.icon_w-10) + int(math.cos(angle_rad) * pitch + math.sin(angle_rad) * roll)
         
-        return [north_sensor, east_sensor, south_sensor, west_sensor]
-    
-    def set_tips(self):
-        self.tips = self.create_tips()
-    
-    def set_sensors(self):
-        self.sensors = self.create_sensors()
+        self.sensors = [north_sensor, east_sensor, south_sensor, west_sensor]
