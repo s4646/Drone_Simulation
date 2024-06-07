@@ -118,14 +118,14 @@ class ChopperScape(Env):
         cv2.destroyAllWindows()
 
     def get_action_meanings(self):
-        return {0: f"Roll: {1}, Pitch: {1}, Yaw: {15}",
-                1: f"Roll: {1}, Pitch: {1}, Yaw: {-15}",
-                2: f"Roll: {1}, Pitch: {-1}, Yaw: {15}",
-                3: f"Roll: {1}, Pitch: {-1}, Yaw: {-15}",
-                4: f"Roll: {-1}, Pitch: {1}, Yaw: {15}",
-                5: f"Roll: {-1}, Pitch: {1}, Yaw: {-15}",
-                6: f"Roll: {-1}, Pitch: {-1}, Yaw: {15}",
-                7: f"Roll: {-1}, Pitch: {-1}, Yaw: {-15}"}
+        return {0: f"Roll: {1}, Pitch: {1}, Yaw: {5}",
+                1: f"Roll: {1}, Pitch: {1}, Yaw: {-5}",
+                2: f"Roll: {1}, Pitch: {-1}, Yaw: {5}",
+                3: f"Roll: {1}, Pitch: {-1}, Yaw: {-5}",
+                4: f"Roll: {-1}, Pitch: {1}, Yaw: {5}",
+                5: f"Roll: {-1}, Pitch: {1}, Yaw: {-5}",
+                6: f"Roll: {-1}, Pitch: {-1}, Yaw: {5}",
+                7: f"Roll: {-1}, Pitch: {-1}, Yaw: {-5}"}
 
     def has_collided(self):
         tips = self.chopper.tips
@@ -150,35 +150,35 @@ class ChopperScape(Env):
 
         # apply the action to the chopper
         if action == 0:
-            self.chopper.move(1, 1, 15)
+            self.chopper.move(1, 1, 5)
             self.chopper.create_tips(1, 1)
             self.chopper.create_sensors(1, 1)
         elif action == 1:
-            self.chopper.move(1, 1, -15)
+            self.chopper.move(1, 1, -5)
             self.chopper.create_tips(1, 1)
             self.chopper.create_sensors(1, 1)
         elif action == 2:
-            self.chopper.move(1, -1, 15)
+            self.chopper.move(1, -1, 5)
             self.chopper.create_tips(1, -1)
             self.chopper.create_sensors(1, -1)
         elif action == 3:
-            self.chopper.move(1, -1, -15)
+            self.chopper.move(1, -1, -5)
             self.chopper.create_tips(1, -1)
             self.chopper.create_sensors(1, -1)
         elif action == 4:
-            self.chopper.move(-1, 1, 15)
+            self.chopper.move(-1, 1, 5)
             self.chopper.create_tips(-1 ,1)
             self.chopper.create_sensors(-1, 1)
         elif action == 5:
-            self.chopper.move(-1, 1, -15)
+            self.chopper.move(-1, 1, -5)
             self.chopper.create_tips(-1, 1)
             self.chopper.create_sensors(-1, 1)
         elif action == 6:
-            self.chopper.move(-1, -1, 15)
+            self.chopper.move(-1, -1, 5)
             self.chopper.create_tips(-1 ,-1)
             self.chopper.create_sensors(-1, -1)
         elif action == 7:
-            self.chopper.move(-1, -1, -15)
+            self.chopper.move(-1, -1, -5)
             self.chopper.create_tips(-1, -1)
             self.chopper.create_sensors(-1, -1)
         
@@ -195,7 +195,12 @@ class ChopperScape(Env):
         self.ep_return += 1
 
         # Draw elements on the canvas
-        self.canvas = self.draw_map_on_canvas(self.canvas, self.map.map)
+        self.canvas = self.draw_map_on_canvas(self.canvas, self.map.map)      
+        for coord in self.chopper.visited:
+            y, x = coord
+            x = int(round(x))
+            y = int(round(y))
+            if not self.map.is_black(y, x): self.canvas[y, x] = [255, 0, 0]
         self.draw_elements_on_canvas()
 
         # If out of fuel, end the episode.
