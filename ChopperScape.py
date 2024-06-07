@@ -6,10 +6,11 @@ import numpy as np
 from Map import Map
 from numba import njit
 import PIL.Image as Image
-from IPython import display
 from gym import Env, spaces
 from Chopper import Chopper
-import matplotlib.pyplot as plt
+import tensorflow.python as tf
+from tensorflow.python.keras.layers import Conv2D, Dense, Flatten, MaxPooling2D
+from tensorflow.python.keras.models import Sequential
 
 
 font = cv2.FONT_HERSHEY_COMPLEX_SMALL
@@ -105,7 +106,7 @@ class ChopperScape(Env):
         self.draw_elements_on_canvas()
 
         # return the observation
-        return self.canvas
+        return self.chopper.get_position()
     
     def render(self, mode = "human"):
         assert mode in ["human", "rgb_array"], "Invalid mode, must be either \"human\" or \"rgb_array\""
@@ -185,7 +186,7 @@ class ChopperScape(Env):
             self.chopper.create_sensors(-1, -1)
         
         # Print current action
-        print(self.get_action_meanings()[action])
+        # print(self.get_action_meanings()[action])
 
         # Scan area for reward
         self.scan_area()
@@ -224,7 +225,7 @@ class ChopperScape(Env):
         if self.fuel_left == 0:
             done = True
 
-        return self.canvas, self.reward, done, []
+        return self.chopper.get_position(), self.reward, done, []
 
     def scan_area(self):
         ch = self.chopper
@@ -246,16 +247,59 @@ class ChopperScape(Env):
 
         ch.visited = np.unique(ch.visited, axis=0)
 
-if __name__ == "__main__":
+
+def train(env: ChopperScape):
+
+    # Initialize Q-table with zeros
+    num_states = env.observation_space.shape[0], env.observation_space.shape[1]
+    num_actions = env.action_space.n
+    Q = np.zeros((num_states[0], num_states[1], num_actions))
+
+    # Hyperparameters
+    alpha = 0.1  # Learning rate
+    gamma = 0.99  # Discount factor
+    epsilon = 0.25  # Exploration rate
+
+    # Training loop
+    num_episodes = 50
+    for episode in range(num_episodes):
+        state = env.reset()
+        total_reward = 0
+        done = False
+
+        while not done:
+             # Choose action based on epsilon-greedy policy
+            if np.random.rand() < epsilon:
+                action = env.action_space.sample()  # Explore
+            else:
+                action = np.argmax(Q[state[0], state[1], :])  # Exploit
+
+            next_state, reward, done, _ = env.step(action)
+
+            # Update Q-value using Q-learning update rule
+            Q[state[0], state[1], action] = (1 - alpha) * Q[state[0], state[1], action] + alpha * (reward + gamma * np.max(Q[next_state[0], next_state[1], :]))
+
+            state = next_state
+            total_reward += reward
+        
+        print(f"Epoch: {episode}, Total Reward: {total_reward}")
+    
+    print("Agent training complete!")
+    return Q
+
+def main():
     path_to_map = "pictures/maps/p11.png"
 
     env = ChopperScape(path_to_map)
-    obs = env.reset()
+
+    Q = train(env)
+
+    state = env.reset()
 
     while True:
-        # Take a random action
-        action = env.action_space.sample()
-        obs, reward, done, info = env.step(action)
+        # Take an action
+        action = np.argmax(Q[state[0], state[1] :])
+        state, reward, done, info = env.step(action)
         
         # Render the game
         env.render(mode='human')
@@ -265,3 +309,5 @@ if __name__ == "__main__":
             break
 
     env.close()
+if __name__ == "__main__":
+    main()
