@@ -8,9 +8,6 @@ from numba import njit
 import PIL.Image as Image
 from gym import Env, spaces
 from Chopper import Chopper
-import tensorflow.python as tf
-from tensorflow.python.keras.layers import Conv2D, Dense, Flatten, MaxPooling2D
-from tensorflow.python.keras.models import Sequential
 
 
 font = cv2.FONT_HERSHEY_COMPLEX_SMALL
@@ -105,14 +102,14 @@ class ChopperScape(Env):
         self.canvas = self.draw_map_on_canvas(self.canvas, self.map.map)
         self.draw_elements_on_canvas()
 
-        # return the observation
-        return self.chopper.get_position()
+        # return state
+        return [0,0,0,0]
     
     def render(self, mode = "human"):
         assert mode in ["human", "rgb_array"], "Invalid mode, must be either \"human\" or \"rgb_array\""
         if mode == "human":
             cv2.imshow("Simulation", self.canvas)
-            cv2.waitKey(100)
+            cv2.waitKey(200)
         
         elif mode == "rgb_array":
             return self.canvas
@@ -132,10 +129,10 @@ class ChopperScape(Env):
 
     def has_collided(self):
         tips = self.chopper.tips
-        if self.map.is_black(tips[0][0], tips[0][1]): print("top left"); return True
-        elif self.map.is_black(tips[1][0], tips[1][1]): print("top right"); return True
-        elif self.map.is_black(tips[2][0], tips[2][1]): print("bottom right"); return True
-        elif self.map.is_black(tips[3][0], tips[3][1]): print("bottom left"); return True
+        if self.map.is_black(tips[0][0], tips[0][1]): return True
+        elif self.map.is_black(tips[1][0], tips[1][1]): return True
+        elif self.map.is_black(tips[2][0], tips[2][1]): return True
+        elif self.map.is_black(tips[3][0], tips[3][1]): return True
         else: return False
 
     def step(self, action):
@@ -188,8 +185,8 @@ class ChopperScape(Env):
         # Print current action
         # print(self.get_action_meanings()[action])
 
-        # Scan area for reward
-        self.scan_area()
+        # Scan area for reward and compute state
+        state = self.scan_area()
 
         # Draw elements on the canvas
         self.canvas = self.draw_map_on_canvas(self.canvas, self.map.map)      
@@ -225,27 +222,46 @@ class ChopperScape(Env):
         if self.fuel_left == 0:
             done = True
 
-        return self.chopper.get_position(), self.reward, done, []
+        return state, self.reward, done, []
 
     def scan_area(self):
         ch = self.chopper
-        temp = ch.interpolate_pixels_along_line(ch.sensors[0][1], ch.sensors[0][0], ch.sensors[2][1], ch.sensors[2][0])
+        danger_meter = [0, 0, 0, 0] # state of chopper = how close the chopper to a wall
+        temp = ch.interpolate_pixels_along_line(ch.sensors[0][0], ch.sensors[0][1], ch.sensors[2][0], ch.sensors[2][1])
         for i, point in enumerate(temp):
             if self.map.is_black(point[0], point[1]):
+                # Count danger                
+                dist_top = np.sqrt((ch.sensors[0][0] - point[0]) ** 2) + np.sqrt((ch.sensors[0][1] - point[1]) ** 2)
+                dist_bottom = np.sqrt((ch.sensors[2][0] - point[0]) ** 2) + np.sqrt((ch.sensors[2][1] - point[1]) ** 2)
+                if dist_top < dist_bottom: danger_meter[0] += 1
+                else: danger_meter[2] += 1
+
+                # Delete black point from visited
                 try: temp = np.delete(temp, i, axis=0)
                 except IndexError: continue
                 self.reward -= 1
+        
         ch.visited = np.concatenate([ch.visited, temp])
 
-        temp = ch.interpolate_pixels_along_line(ch.sensors[1][1], ch.sensors[1][0], ch.sensors[3][1], ch.sensors[3][0])
+        temp = ch.interpolate_pixels_along_line(ch.sensors[1][0], ch.sensors[1][1], ch.sensors[3][0], ch.sensors[3][1])
         for i, point in enumerate(temp):
             if self.map.is_black(point[0], point[1]):
+                # Count danger
+                dist_right = np.sqrt((ch.sensors[1][0] - point[0]) ** 2) + np.sqrt((ch.sensors[1][1] - point[1]) ** 2)
+                dist_left = np.sqrt((ch.sensors[3][0] - point[0]) ** 2) + np.sqrt((ch.sensors[3][1] - point[1]) ** 2)
+                if dist_right < dist_left: danger_meter[1] += 1
+                else: danger_meter[3] += 1
+
+                # Delete black point from visited
                 try: temp = np.delete(temp, i, axis=0)
                 except IndexError: continue
                 self.reward -= 1
+
         ch.visited = np.concatenate([ch.visited, temp])
 
         ch.visited = np.unique(ch.visited, axis=0)
+        
+        return danger_meter
 
 
 def train(env: ChopperScape):
@@ -261,7 +277,7 @@ def train(env: ChopperScape):
     epsilon = 0.25  # Exploration rate
 
     # Training loop
-    num_episodes = 50
+    num_episodes = 1000
     for episode in range(num_episodes):
         state = env.reset()
         total_reward = 0
@@ -292,13 +308,15 @@ def main():
 
     env = ChopperScape(path_to_map)
 
-    Q = train(env)
+    # Q = train(env)
+    # np.save('Q',Q)
 
     state = env.reset()
 
     while True:
         # Take an action
-        action = np.argmax(Q[state[0], state[1] :])
+        # action = np.argmax(Q[state[0], state[1] :])
+        action = env.action_space.sample()
         state, reward, done, info = env.step(action)
         
         # Render the game

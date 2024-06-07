@@ -59,7 +59,7 @@ class Chopper(Point):
 
     @staticmethod
     @njit
-    def interpolate_pixels_along_line(x0, y0, x1, y1):
+    def interpolate_pixels_along_line(y0, x0, y1, x1):
         """
         Uses Xiaolin Wu's line algorithm to interpolate all of the pixels along a straight line,
         given two points (x0, y0) and (x1, y1).
