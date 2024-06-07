@@ -89,7 +89,7 @@ class ChopperScape(Env):
         # Intialise the chopper
         self.chopper = Chopper("chopper")
         self.chopper.set_position(y, x)
-        self.chopper.create_tips(0, 0)
+        self.chopper.create_tips()
         self.chopper.create_sensors(0, 0)
 
         # Intialise the elements 
@@ -129,10 +129,10 @@ class ChopperScape(Env):
 
     def has_collided(self):
         tips = self.chopper.tips
-        if self.map.is_black(tips[0][0], tips[0][1]): return True
-        elif self.map.is_black(tips[1][0], tips[1][1]): return True
-        elif self.map.is_black(tips[2][0], tips[2][1]): return True
-        elif self.map.is_black(tips[3][0], tips[3][1]): return True
+        if self.map.is_black(tips[0][0], tips[0][1]): print("top left"); return True
+        elif self.map.is_black(tips[1][0], tips[1][1]): print("top right"); return True
+        elif self.map.is_black(tips[2][0], tips[2][1]): print("bottom right"); return True
+        elif self.map.is_black(tips[3][0], tips[3][1]): print("bottom left"); return True
         else: return False
 
     def step(self, action):
@@ -151,45 +151,45 @@ class ChopperScape(Env):
         # apply the action to the chopper
         if action == 0:
             self.chopper.move(1, 1, 5)
-            self.chopper.create_tips(1, 1)
+            self.chopper.create_tips()
             self.chopper.create_sensors(1, 1)
         elif action == 1:
             self.chopper.move(1, 1, -5)
-            self.chopper.create_tips(1, 1)
+            self.chopper.create_tips()
             self.chopper.create_sensors(1, 1)
         elif action == 2:
             self.chopper.move(1, -1, 5)
-            self.chopper.create_tips(1, -1)
+            self.chopper.create_tips()
             self.chopper.create_sensors(1, -1)
         elif action == 3:
             self.chopper.move(1, -1, -5)
-            self.chopper.create_tips(1, -1)
+            self.chopper.create_tips()
             self.chopper.create_sensors(1, -1)
         elif action == 4:
             self.chopper.move(-1, 1, 5)
-            self.chopper.create_tips(-1 ,1)
+            self.chopper.create_tips()
             self.chopper.create_sensors(-1, 1)
         elif action == 5:
             self.chopper.move(-1, 1, -5)
-            self.chopper.create_tips(-1, 1)
+            self.chopper.create_tips()
             self.chopper.create_sensors(-1, 1)
         elif action == 6:
             self.chopper.move(-1, -1, 5)
-            self.chopper.create_tips(-1 ,-1)
+            self.chopper.create_tips()
             self.chopper.create_sensors(-1, -1)
         elif action == 7:
             self.chopper.move(-1, -1, -5)
-            self.chopper.create_tips(-1, -1)
+            self.chopper.create_tips()
             self.chopper.create_sensors(-1, -1)
         
         print(self.get_action_meanings()[action])
 
         # If chopper has collided
-        if self.has_collided():
-            # Conclude the episode and remove the chopper from the Env.
-            done = True
-            reward = -10
-            self.elements.remove(self.chopper)
+        # if self.has_collided():
+        #     # Conclude the episode and remove the chopper from the Env.
+        #     done = True
+        #     reward = -10
+        #     self.elements.remove(self.chopper)
         
         # Increment the episodic return
         self.ep_return += 1
@@ -202,6 +202,12 @@ class ChopperScape(Env):
             y = int(round(y))
             if not self.map.is_black(y, x): self.canvas[y, x] = [255, 0, 0]
         self.draw_elements_on_canvas()
+        for tip in self.chopper.tips:
+            y, x = tip
+            x = int(round(x))
+            y = int(round(y))
+            if not self.map.is_black(y, x): self.canvas[y, x] = [0, 0, 255]
+
 
         # If out of fuel, end the episode.
         if self.fuel_left == 0:
@@ -222,7 +228,6 @@ if __name__ == "__main__":
 
     while True:
         # Take a random action
-        # print(env.fuel_left)
         action = env.action_space.sample()
         obs, reward, done, info = env.step(action)
 

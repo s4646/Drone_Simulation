@@ -15,15 +15,24 @@ class Chopper(Point):
         self.sensors = []
         self.visited = np.empty((0, 2))
 
-    def create_tips(self, pitch, roll):
+    def create_tips(self):
         y, x = self.get_position()
         angle_rad = math.radians(self.angle)
-        top_left = int((y-self.icon_h//2) + math.sin(angle_rad) * pitch + math.cos(angle_rad) * roll), int((x-self.icon_w//2) + math.cos(angle_rad) * pitch + math.sin(angle_rad) * roll)
-        top_right = int((y-self.icon_h//2) + math.sin(angle_rad) * pitch + math.cos(angle_rad) * roll), int((x+self.icon_w//2) + math.cos(angle_rad) * pitch + math.sin(angle_rad) * roll)
-        bottom_right = int((y+self.icon_h//2) + math.sin(angle_rad) * pitch + math.cos(angle_rad) * roll), int((x+self.icon_w//2) + math.cos(angle_rad) * pitch + math.sin(angle_rad) * roll)
-        bottom_left = int((y+self.icon_h//2) + math.sin(angle_rad) * pitch + math.cos(angle_rad) * roll), int((x-self.icon_w//2) + math.cos(angle_rad) * pitch + math.sin(angle_rad) * roll)
+
+        top_left_coord = y-self.icon_h//2, x-self.icon_w//2
+        top_left = self.rotate((y,x), top_left_coord, angle_rad)
+
+        top_right_coord = y-self.icon_h//2, x+self.icon_w//2
+        top_right = self.rotate((y,x), top_right_coord, angle_rad)
+
+        bottom_right_coord = y+self.icon_h//2, x+self.icon_w//2
+        bottom_right = self.rotate((y,x), bottom_right_coord, angle_rad)
+
+        bottom_left_coord = y+self.icon_h//2, x-self.icon_w//2
+        bottom_left = self.rotate((y,x), bottom_left_coord, angle_rad)
         
         self.tips =  [top_left, top_right, bottom_right, bottom_left]
+        print(self.tips)
 
     def create_sensors(self, pitch, roll):
         y, x = self.get_position()
@@ -42,13 +51,13 @@ class Chopper(Point):
         self.visited = np.concatenate([self.visited, temp])
 
         self.visited = np.unique(self.visited, axis=0)
-        print(self.sensors)
+        # print(self.sensors)
     
     def rotate_icon(self):
         h, w = self.icon_h, self.icon_w
         center = (w // 2, h // 2)
         rot_mat = cv2.getRotationMatrix2D(center, self.angle, 1.0)
-        return cv2.warpAffine(self.icon, rot_mat, (w, h), flags=cv2.INTER_CUBIC, borderMode = cv2.BORDER_CONSTANT, borderValue=[255, 0, 0])
+        return cv2.warpAffine(self.icon, rot_mat, (w, h), flags=cv2.INTER_CUBIC, borderMode = cv2.BORDER_CONSTANT, borderValue=[255, 255, 255])
 
     @staticmethod
     @njit
