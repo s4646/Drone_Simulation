@@ -50,14 +50,6 @@ class Chopper(Point):
         left_sensor = self.rotate((y,x), left_sensor_coord, angle_rad)
         
         self.sensors = [top_sensor, right_sensor, bottom_sensor, left_sensor]
-        
-        temp = self.interpolate_pixels_along_line(top_sensor[1], top_sensor[0], bottom_sensor[1], bottom_sensor[0])
-        self.visited = np.concatenate([self.visited, temp])
-
-        temp = self.interpolate_pixels_along_line(right_sensor[1], right_sensor[0], left_sensor[1], left_sensor[0])
-        self.visited = np.concatenate([self.visited, temp])
-
-        self.visited = np.unique(self.visited, axis=0)
     
     def rotate_icon(self):
         h, w = self.icon_h, self.icon_w

@@ -78,7 +78,9 @@ class ChopperScape(Env):
         self.fuel_left = self.max_fuel
 
         # Reset the reward
+        self.total_visited = 0
         self.ep_return  = 0
+        self.reward = 0
 
         self.fuel_count = 0
 
@@ -139,14 +141,14 @@ class ChopperScape(Env):
         # Flag that marks the termination of an episode
         done = False
         
+        # Init reward for this step
+        self.reward = 0
+        
         # Assert that it is a valid action 
         assert self.action_space.contains(action), "Invalid Action"
 
         # Decrease the fuel counter 
-        self.fuel_left -= 1 
-        
-        # Reward for executing a step.
-        reward = 1      
+        self.fuel_left -= 1      
 
         # apply the action to the chopper
         if action == 0:
@@ -182,17 +184,11 @@ class ChopperScape(Env):
             self.chopper.create_tips()
             self.chopper.create_sensors(-1, -1)
         
+        # Print current action
         print(self.get_action_meanings()[action])
 
-        # If chopper has collided
-        if self.has_collided():
-            # Conclude the episode and remove the chopper from the Env.
-            done = True
-            reward = -10
-            self.elements.remove(self.chopper)
-        
-        # Increment the episodic return
-        self.ep_return += 1
+        # Scan area for reward
+        self.scan_area()
 
         # Draw elements on the canvas
         self.canvas = self.draw_map_on_canvas(self.canvas, self.map.map)      
@@ -208,20 +204,50 @@ class ChopperScape(Env):
             y = int(round(y))
             if not self.map.is_black(y, x): self.canvas[y, x] = [0, 0, 255]
 
+        # Reward for executing a step.
+        self.reward += len(self.chopper.visited) - self.total_visited
+        self.total_visited = len(self.chopper.visited)
+        # print(f"total visited: {self.total_visited}, reward: {self.reward}")
+        
+        # If chopper has collided
+        if self.has_collided():
+            # Conclude the episode and remove the chopper from the Env.
+            done = True
+            self.reward = -200
+            self.elements.remove(self.chopper)
+        
+        # Increment the episodic return
+        self.ep_return += self.reward
+        # print(f"ep_return: {self.ep_return}")
 
         # If out of fuel, end the episode.
         if self.fuel_left == 0:
             done = True
 
-        return self.canvas, reward, done, []
+        return self.canvas, self.reward, done, []
+
+    def scan_area(self):
+        ch = self.chopper
+        temp = ch.interpolate_pixels_along_line(ch.sensors[0][1], ch.sensors[0][0], ch.sensors[2][1], ch.sensors[2][0])
+        for i, point in enumerate(temp):
+            if self.map.is_black(point[0], point[1]):
+                try: temp = np.delete(temp, i, axis=0)
+                except IndexError: continue
+                self.reward -= 1
+        ch.visited = np.concatenate([ch.visited, temp])
+
+        temp = ch.interpolate_pixels_along_line(ch.sensors[1][1], ch.sensors[1][0], ch.sensors[3][1], ch.sensors[3][0])
+        for i, point in enumerate(temp):
+            if self.map.is_black(point[0], point[1]):
+                try: temp = np.delete(temp, i, axis=0)
+                except IndexError: continue
+                self.reward -= 1
+        ch.visited = np.concatenate([ch.visited, temp])
+
+        ch.visited = np.unique(ch.visited, axis=0)
 
 if __name__ == "__main__":
     path_to_map = "pictures/maps/p11.png"
-    # env = ChopperScape(path_to_map)
-    # obs = env.reset()
-    # screen = env.render(mode = "rgb_array")
-    # plt.imshow(screen)
-    # plt.show()
 
     env = ChopperScape(path_to_map)
     obs = env.reset()
@@ -230,7 +256,6 @@ if __name__ == "__main__":
         # Take a random action
         action = env.action_space.sample()
         obs, reward, done, info = env.step(action)
-
         
         # Render the game
         env.render(mode='human')
