@@ -185,11 +185,11 @@ class ChopperScape(Env):
         print(self.get_action_meanings()[action])
 
         # If chopper has collided
-        # if self.has_collided():
-        #     # Conclude the episode and remove the chopper from the Env.
-        #     done = True
-        #     reward = -10
-        #     self.elements.remove(self.chopper)
+        if self.has_collided():
+            # Conclude the episode and remove the chopper from the Env.
+            done = True
+            reward = -10
+            self.elements.remove(self.chopper)
         
         # Increment the episodic return
         self.ep_return += 1

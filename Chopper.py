@@ -32,31 +32,37 @@ class Chopper(Point):
         bottom_left = self.rotate((y,x), bottom_left_coord, angle_rad)
         
         self.tips =  [top_left, top_right, bottom_right, bottom_left]
-        print(self.tips)
 
     def create_sensors(self, pitch, roll):
         y, x = self.get_position()
         angle_rad = math.radians(self.angle)
-        north_sensor = int((y-self.icon_h-10) + math.sin(angle_rad) * pitch + math.cos(angle_rad) * roll), int(x + math.cos(angle_rad) * pitch + math.sin(angle_rad) * roll)
-        east_sensor = int(y + math.sin(angle_rad) * pitch + math.cos(angle_rad) * roll), (x+self.icon_w+10) + int(math.cos(angle_rad) * pitch + math.sin(angle_rad) * roll)
-        south_sensor = int((y+self.icon_h+10) + math.sin(angle_rad) * pitch + math.cos(angle_rad) * roll), x + int(math.cos(angle_rad) * pitch + math.sin(angle_rad) * roll)
-        west_sensor = int(y + math.sin(angle_rad) * pitch + math.cos(angle_rad) * roll), (x-self.icon_w-10) + int(math.cos(angle_rad) * pitch + math.sin(angle_rad) * roll)
+
+        top_sensor_coord = y-self.icon_h-10, x
+        top_sensor = self.rotate((y,x), top_sensor_coord, angle_rad)
+
+        right_sensor_coord = y, x+self.icon_w+10
+        right_sensor = self.rotate((y,x), right_sensor_coord, angle_rad)
+
+        bottom_sensor_coord = y+self.icon_h+10, x
+        bottom_sensor = self.rotate((y,x), bottom_sensor_coord, angle_rad)
+
+        left_sensor_coord = y, x-self.icon_w-10
+        left_sensor = self.rotate((y,x), left_sensor_coord, angle_rad)
         
-        self.sensors = [north_sensor, east_sensor, south_sensor, west_sensor]
+        self.sensors = [top_sensor, right_sensor, bottom_sensor, left_sensor]
         
-        temp = self.interpolate_pixels_along_line(north_sensor[1], north_sensor[0], south_sensor[1], south_sensor[0])
+        temp = self.interpolate_pixels_along_line(top_sensor[1], top_sensor[0], bottom_sensor[1], bottom_sensor[0])
         self.visited = np.concatenate([self.visited, temp])
 
-        temp = self.interpolate_pixels_along_line(east_sensor[1], east_sensor[0], west_sensor[1], west_sensor[0])
+        temp = self.interpolate_pixels_along_line(right_sensor[1], right_sensor[0], left_sensor[1], left_sensor[0])
         self.visited = np.concatenate([self.visited, temp])
 
         self.visited = np.unique(self.visited, axis=0)
-        # print(self.sensors)
     
     def rotate_icon(self):
         h, w = self.icon_h, self.icon_w
         center = (w // 2, h // 2)
-        rot_mat = cv2.getRotationMatrix2D(center, self.angle, 1.0)
+        rot_mat = cv2.getRotationMatrix2D(center, -self.angle, 1.0)
         return cv2.warpAffine(self.icon, rot_mat, (w, h), flags=cv2.INTER_CUBIC, borderMode = cv2.BORDER_CONSTANT, borderValue=[255, 255, 255])
 
     @staticmethod
