@@ -8,6 +8,7 @@ from numba import njit
 import PIL.Image as Image
 from gym import Env, spaces
 from Chopper import Chopper
+from itertools import product
 
 
 font = cv2.FONT_HERSHEY_COMPLEX_SMALL
@@ -24,7 +25,7 @@ class ChopperScape(Env):
                                             high = np.ones(self.observation_shape),
                                             dtype = np.float16)
         
-        # Define an action space ranging from 0 to 4
+        # Define an action space ranging from 0 to 8
         self.action_space = spaces.Discrete(8,)
                         
         # Create a canvas to render the environment images upon 
@@ -109,7 +110,7 @@ class ChopperScape(Env):
         assert mode in ["human", "rgb_array"], "Invalid mode, must be either \"human\" or \"rgb_array\""
         if mode == "human":
             cv2.imshow("Simulation", self.canvas)
-            cv2.waitKey(200)
+            cv2.waitKey(100)
         
         elif mode == "rgb_array":
             return self.canvas
@@ -211,7 +212,7 @@ class ChopperScape(Env):
         if self.has_collided():
             # Conclude the episode and remove the chopper from the Env.
             done = True
-            self.reward = -200
+            self.reward = -1000
             self.elements.remove(self.chopper)
         
         # Increment the episodic return
@@ -233,9 +234,9 @@ class ChopperScape(Env):
                 # Count danger                
                 dist_top = np.sqrt((ch.sensors[0][0] - point[0]) ** 2) + np.sqrt((ch.sensors[0][1] - point[1]) ** 2)
                 dist_bottom = np.sqrt((ch.sensors[2][0] - point[0]) ** 2) + np.sqrt((ch.sensors[2][1] - point[1]) ** 2)
-                if dist_top < dist_bottom: danger_meter[0] += 1
-                else: danger_meter[2] += 1
-
+                if dist_top < dist_bottom: danger_meter[0] =  0 if danger_meter[0] >= 10 else danger_meter[0]+1
+                else: danger_meter[2] =  0 if danger_meter[2] >= 10 else danger_meter[2]+1
+                
                 # Delete black point from visited
                 try: temp = np.delete(temp, i, axis=0)
                 except IndexError: continue
@@ -249,8 +250,8 @@ class ChopperScape(Env):
                 # Count danger
                 dist_right = np.sqrt((ch.sensors[1][0] - point[0]) ** 2) + np.sqrt((ch.sensors[1][1] - point[1]) ** 2)
                 dist_left = np.sqrt((ch.sensors[3][0] - point[0]) ** 2) + np.sqrt((ch.sensors[3][1] - point[1]) ** 2)
-                if dist_right < dist_left: danger_meter[1] += 1
-                else: danger_meter[3] += 1
+                if dist_right < dist_left: danger_meter[1] = 0 if danger_meter[1] >= 10 else danger_meter[1]+1
+                else: danger_meter[3] = 0 if danger_meter[3] >= 10 else danger_meter[3]+1
 
                 # Delete black point from visited
                 try: temp = np.delete(temp, i, axis=0)
@@ -267,14 +268,15 @@ class ChopperScape(Env):
 def train(env: ChopperScape):
 
     # Initialize Q-table with zeros
-    num_states = env.observation_space.shape[0], env.observation_space.shape[1]
+    options = list(product(range(0, 11), repeat=4))
+    num_states = len(options)
     num_actions = env.action_space.n
-    Q = np.zeros((num_states[0], num_states[1], num_actions))
+    Q = np.zeros((num_states, num_actions))
 
     # Hyperparameters
-    alpha = 0.1  # Learning rate
+    alpha = 0.1 # Learning rate
     gamma = 0.99  # Discount factor
-    epsilon = 0.25  # Exploration rate
+    epsilon = 0.2  # Exploration rate
 
     # Training loop
     num_episodes = 1000
@@ -284,16 +286,17 @@ def train(env: ChopperScape):
         done = False
 
         while not done:
-             # Choose action based on epsilon-greedy policy
+            # Choose action based on epsilon-greedy policy
             if np.random.rand() < epsilon:
                 action = env.action_space.sample()  # Explore
             else:
-                action = np.argmax(Q[state[0], state[1], :])  # Exploit
+                action = np.argmax(Q[options.index(tuple(state)), :])  # Exploit
 
             next_state, reward, done, _ = env.step(action)
 
             # Update Q-value using Q-learning update rule
-            Q[state[0], state[1], action] = (1 - alpha) * Q[state[0], state[1], action] + alpha * (reward + gamma * np.max(Q[next_state[0], next_state[1], :]))
+            Q[options.index(tuple(state)), action] += alpha * \
+            (reward + gamma * np.max(Q[options.index(tuple(next_state))]) - Q[options.index(tuple(state)), action])
 
             state = next_state
             total_reward += reward
@@ -308,23 +311,28 @@ def main():
 
     env = ChopperScape(path_to_map)
 
-    # Q = train(env)
-    # np.save('Q',Q)
+    Q = train(env)
+    np.save('Q',Q)
+    # Q = np.load('Q.npy')
+    # options = list(product(range(0, 11), repeat=4))
 
-    state = env.reset()
+    # for _ in range(10):
 
-    while True:
-        # Take an action
-        # action = np.argmax(Q[state[0], state[1] :])
-        action = env.action_space.sample()
-        state, reward, done, info = env.step(action)
-        
-        # Render the game
-        env.render(mode='human')
-        env.canvas = np.ones(env.observation_shape) * 1
-        
-        if done == True:
-            break
+    #     state = env.reset()
+
+    #     while True:
+    #         # Take an action
+    #         action = np.argmax(Q[options.index(tuple(state)), :])
+    #         # action = env.action_space.sample()
+    #         state, reward, done, info = env.step(action)
+    #         # print(state)
+            
+    #         # Render the game
+    #         env.render(mode='human')
+    #         env.canvas = np.ones(env.observation_shape) * 1
+            
+    #         if done == True:
+    #             break
 
     env.close()
 if __name__ == "__main__":
