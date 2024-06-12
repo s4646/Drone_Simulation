@@ -127,15 +127,14 @@ class Environment(object):
         self.total_visited = 0
 
         # Determine a place to intialise the chopper in
-        x = 700
-        y = 400
+        x = 700 # 100
+        y = 400 # 80
 
         # Intialise the chopper
         self.chopper = Chopper("chopper")
         self.chopper.set_position(y, x)
         self.chopper.create_tips()
         self.chopper.create_sensors()
-        self.pitch = 0; self.roll = 0; self.yaw = 0
 
         # Reset the Canvas 
         self.canvas = np.ones(self.observation_shape) * 1
@@ -153,8 +152,12 @@ class Environment(object):
         # Take action
         p, r = 0, 0
         ###
-        # IMPLEMT ALGORITHM HERE
+        # IMPLEMENT ALGORITHM HERE
         ###
+        
+        # print(f"desired: {p}, {r}, {y}")
+        p, r = self.controller.update(p, self.chopper.pitch, r, self.chopper.roll)
+        # print(f"actual: {p}, r: {r}, y: {y}")
 
         self.chopper.set_pitch_roll_yaw(p, r, y)
         self.chopper.move()
