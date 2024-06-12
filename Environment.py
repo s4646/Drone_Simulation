@@ -127,8 +127,8 @@ class Environment(object):
         self.total_visited = 0
 
         # Determine a place to intialise the chopper in
-        x = 700 # 100
-        y = 400 # 80
+        x = 100 # 700
+        y = 80  # 400
 
         # Intialise the chopper
         self.chopper = Chopper("chopper")
@@ -150,17 +150,21 @@ class Environment(object):
         # print(f"danger meter: {danger_meter}")
 
         # Take action
-        p, r = 0, 0
-        ###
-        # IMPLEMENT ALGORITHM HERE
-        ###
+        print(danger_meter)
+        p, r, y = 0, 0, 0
+        if danger_meter[3] < 10: r = -1
+        else: r = 1
+        if danger_meter[0] < 10: p = -1
+        else: p = 1
+        if danger_meter[3] != 0 and danger_meter[0] != 0: y = 2
+        else: y = 0
         
-        # print(f"desired: {p}, {r}, {y}")
+        print(f"desired: {p}, {r}, {y}")
         p, r = self.controller.update(p, self.chopper.pitch, r, self.chopper.roll)
-        # print(f"actual: {p}, r: {r}, y: {y}")
+        print(f"actual: {p}, {r}, {y}")
 
         self.chopper.set_pitch_roll_yaw(p, r, y)
-        self.chopper.move()
+        self.chopper.move(self.chopper.pitch, self.chopper.roll, self.chopper.angle)
         self.chopper.create_tips()
         self.chopper.create_sensors()
 

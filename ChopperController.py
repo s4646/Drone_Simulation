@@ -3,8 +3,8 @@ from PIDController import PIDController
 class ChopperController:
     def __init__(self):
         # Initialize PID controllers for pitch, and roll
-        self.pitch_pid = PIDController(kp=0.1, ki=0.001, kd=0.01)
-        self.roll_pid = PIDController(kp=0.1, ki=0.001, kd=0.01)
+        self.pitch_pid = PIDController(kp=0.5, ki=0.005, kd=0.05)
+        self.roll_pid = PIDController(kp=0.5, ki=0.005, kd=0.05)
 
     def update(self,
                desired_pitch, current_pitch,

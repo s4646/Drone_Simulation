@@ -5,9 +5,6 @@ class Point(object):
     def __init__(self, name):
         self.x = 0
         self.y = 0
-        self.pitch = 0
-        self.roll = 0
-        self.angle = 90
         self.name = name
     
     def set_position(self, y, x):
@@ -17,11 +14,11 @@ class Point(object):
     def get_position(self):
         return (self.y, self.x)
 
-    def move(self):
-            angle_rad = math.radians(self.angle)
+    def move(self, pitch, roll, angle):
+            angle_rad = math.radians(angle)
 
-            self.y += int(np.round(self.pitch * math.sin(angle_rad)))
-            self.x += int(np.round(self.roll * math.cos(angle_rad)))
+            self.y += int(np.round(pitch * math.sin(angle_rad))) if math.sin(angle_rad) != 0 else pitch
+            self.x += int(np.round(roll * math.cos(angle_rad))) if math.cos(angle_rad) != 0 else roll
 
 
     @staticmethod

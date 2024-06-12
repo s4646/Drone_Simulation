@@ -17,7 +17,7 @@ class Chopper(Point):
 
         self.pitch = 0
         self.roll = 0
-        self.angle = 90
+        self.angle = 0
 
     def set_pitch_roll_yaw(self, pitch, roll, yaw):
         if self.pitch > -2 and self.pitch < 2: self.pitch += pitch

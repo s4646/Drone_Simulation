@@ -2,7 +2,7 @@ import numpy as np
 from Environment import Environment
 
 def main():
-    path_to_map = "pictures/maps/test.png"
+    path_to_map = "pictures/maps/p11.png"
     env = Environment(path_to_map)
 
     done = env.reset()
