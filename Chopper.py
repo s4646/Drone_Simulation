@@ -7,13 +7,23 @@ from Point import Point
 class Chopper(Point):
     def __init__(self, name):
         super(Chopper, self).__init__(name)
-        self.icon = cv2.imread("pictures/drone.png") /255.0
-        self.icon_w = 12
-        self.icon_h = 12
+        self.icon = cv2.imread("pictures/drone.png") / 255.0
+        self.icon_w = 8
+        self.icon_h = 8
         self.icon = cv2.resize(self.icon, (self.icon_h, self.icon_w))
         self.tips = []
         self.sensors = []
         self.visited = np.empty((0, 2))
+
+        self.pitch = 0
+        self.roll = 0
+        self.angle = 90
+
+    def set_pitch_roll_yaw(self, pitch, roll, yaw):
+        if self.pitch > -2 and self.pitch < 2: self.pitch += pitch
+        if self.roll > -2 and self.roll < 2: self.roll += roll
+        self.angle += yaw
+        print(f"Total: {self.pitch}, {self.roll}, {self.angle}")
 
     def create_tips(self):
         y, x = self.get_position()
@@ -33,20 +43,20 @@ class Chopper(Point):
         
         self.tips =  [top_left, top_right, bottom_right, bottom_left]
 
-    def create_sensors(self, pitch, roll):
+    def create_sensors(self):
         y, x = self.get_position()
         angle_rad = math.radians(self.angle)
 
-        top_sensor_coord = y-self.icon_h-10, x
-        top_sensor = self.rotate((y,x), top_sensor_coord, angle_rad)
+        top_sensor_coord = y-self.icon_h-20, x
+        top_sensor = self.rotate((y,x), top_sensor_coord, angle_rad) 
 
-        right_sensor_coord = y, x+self.icon_w+10
+        right_sensor_coord = y, x+self.icon_w+20
         right_sensor = self.rotate((y,x), right_sensor_coord, angle_rad)
 
-        bottom_sensor_coord = y+self.icon_h+10, x
+        bottom_sensor_coord = y+self.icon_h+20, x
         bottom_sensor = self.rotate((y,x), bottom_sensor_coord, angle_rad)
 
-        left_sensor_coord = y, x-self.icon_w-10
+        left_sensor_coord = y, x-self.icon_w-20
         left_sensor = self.rotate((y,x), left_sensor_coord, angle_rad)
         
         self.sensors = [top_sensor, right_sensor, bottom_sensor, left_sensor]

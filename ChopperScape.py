@@ -1,6 +1,7 @@
 import gym
 import cv2 
 import time
+import math
 import random
 import numpy as np 
 from Map import Map
@@ -35,7 +36,7 @@ class ChopperScape(Env):
         self.elements = []
         
         # Maximum fuel chopper can take at once
-        self.max_fuel = 1000
+        self.max_fuel = 4800
 
         # Permissible area of helicper to be 
         self.y_min = int (self.observation_shape[0] * 0.1)
@@ -72,7 +73,7 @@ class ChopperScape(Env):
         
         return canvas
 
-    def reset(self):
+    def reset(self, is_train: bool):
         # Reset the fuel consumed
         self.fuel_left = self.max_fuel
 
@@ -85,13 +86,13 @@ class ChopperScape(Env):
 
         # Determine a place to intialise the chopper in
         x = 100
-        y = 50
+        y = 80
         
         # Intialise the chopper
         self.chopper = Chopper("chopper")
         self.chopper.set_position(y, x)
         self.chopper.create_tips()
-        self.chopper.create_sensors(0, 0)
+        self.chopper.create_sensors()
 
         # Intialise the elements 
         self.elements = [self.chopper]
@@ -99,9 +100,10 @@ class ChopperScape(Env):
         # Reset the Canvas 
         self.canvas = np.ones(self.observation_shape) * 1
 
-        # Draw elements on the canvas
-        self.canvas = self.draw_map_on_canvas(self.canvas, self.map.map)
-        self.draw_elements_on_canvas()
+        if not is_train:
+            # Draw elements on the canvas
+            self.canvas = self.draw_map_on_canvas(self.canvas, self.map.map)
+            self.draw_elements_on_canvas()
 
         # return state
         return [0,0,0,0]
@@ -126,7 +128,15 @@ class ChopperScape(Env):
                 4: f"Roll: {-1}, Pitch: {1}, Yaw: {5}",
                 5: f"Roll: {-1}, Pitch: {1}, Yaw: {-5}",
                 6: f"Roll: {-1}, Pitch: {-1}, Yaw: {5}",
-                7: f"Roll: {-1}, Pitch: {-1}, Yaw: {-5}"}
+                7: f"Roll: {-1}, Pitch: {-1}, Yaw: {-5}",
+                8: f"Roll: {1}, Pitch: {0}, Yaw: {0}",
+                9: f"Roll: {-1}, Pitch: {0}, Yaw: {0}",
+                10: f"Roll: {0}, Pitch: {1}, Yaw: {0}",
+                11: f"Roll: {0}, Pitch: {-1}, Yaw: {0}",
+                12: f"Roll: {0}, Pitch: {0}, Yaw: {5}",
+                13: f"Roll: {0}, Pitch: {0}, Yaw: {-5}"
+                # 14: f"Roll: {0}, Pitch: {0}, Yaw: {0}",
+                }
 
     def has_collided(self):
         tips = self.chopper.tips
@@ -136,7 +146,7 @@ class ChopperScape(Env):
         elif self.map.is_black(tips[3][0], tips[3][1]): return True
         else: return False
 
-    def step(self, action):
+    def step(self, action, is_train: bool):
         # Flag that marks the termination of an episode
         done = False
         
@@ -153,35 +163,63 @@ class ChopperScape(Env):
         if action == 0:
             self.chopper.move(1, 1, 5)
             self.chopper.create_tips()
-            self.chopper.create_sensors(1, 1)
+            self.chopper.create_sensors()
         elif action == 1:
             self.chopper.move(1, 1, -5)
             self.chopper.create_tips()
-            self.chopper.create_sensors(1, 1)
+            self.chopper.create_sensors()
         elif action == 2:
             self.chopper.move(1, -1, 5)
             self.chopper.create_tips()
-            self.chopper.create_sensors(1, -1)
+            self.chopper.create_sensors()
         elif action == 3:
             self.chopper.move(1, -1, -5)
             self.chopper.create_tips()
-            self.chopper.create_sensors(1, -1)
+            self.chopper.create_sensors()
         elif action == 4:
             self.chopper.move(-1, 1, 5)
             self.chopper.create_tips()
-            self.chopper.create_sensors(-1, 1)
+            self.chopper.create_sensors()
         elif action == 5:
             self.chopper.move(-1, 1, -5)
             self.chopper.create_tips()
-            self.chopper.create_sensors(-1, 1)
+            self.chopper.create_sensors()
         elif action == 6:
             self.chopper.move(-1, -1, 5)
             self.chopper.create_tips()
-            self.chopper.create_sensors(-1, -1)
+            self.chopper.create_sensors()
         elif action == 7:
             self.chopper.move(-1, -1, -5)
             self.chopper.create_tips()
-            self.chopper.create_sensors(-1, -1)
+            self.chopper.create_sensors()
+        elif action == 8:
+            self.chopper.move(1, 0, 0)
+            self.chopper.create_tips()
+            self.chopper.create_sensors()
+        elif action == 9:
+            self.chopper.move(-1, 0, 0)
+            self.chopper.create_tips()
+            self.chopper.create_sensors()
+        elif action == 10:
+            self.chopper.move(0, 1, 0)
+            self.chopper.create_tips()
+            self.chopper.create_sensors()
+        elif action == 11:
+            self.chopper.move(0, -1, 0)
+            self.chopper.create_tips()
+            self.chopper.create_sensors()
+        elif action == 12:
+            self.chopper.move(0, 0, 5)
+            self.chopper.create_tips()
+            self.chopper.create_sensors()
+        elif action == 13:
+            self.chopper.move(0, 0, -5)
+            self.chopper.create_tips()
+            self.chopper.create_sensors()
+        elif action == 14:
+            self.chopper.move(0, 0, 0)
+            self.chopper.create_tips()
+            self.chopper.create_sensors()
         
         # Print current action
         # print(self.get_action_meanings()[action])
@@ -189,22 +227,23 @@ class ChopperScape(Env):
         # Scan area for reward and compute state
         state = self.scan_area()
 
-        # Draw elements on the canvas
-        self.canvas = self.draw_map_on_canvas(self.canvas, self.map.map)      
-        for coord in self.chopper.visited:
-            y, x = coord
-            x = int(round(x))
-            y = int(round(y))
-            if not self.map.is_black(y, x): self.canvas[y, x] = [255, 0, 0]
-        self.draw_elements_on_canvas()
-        for tip in self.chopper.tips:
-            y, x = tip
-            x = int(round(x))
-            y = int(round(y))
-            if not self.map.is_black(y, x): self.canvas[y, x] = [0, 0, 255]
+        if not is_train:
+            # Draw elements on the canvas
+            self.canvas = self.draw_map_on_canvas(self.canvas, self.map.map)      
+            for coord in self.chopper.visited:
+                y, x = coord
+                x = int(round(x))
+                y = int(round(y))
+                if not self.map.is_black(y, x): self.canvas[y, x] = [255, 0, 0]
+            self.draw_elements_on_canvas()
+            for tip in self.chopper.tips:
+                y, x = tip
+                x = int(round(x))
+                y = int(round(y))
+                if not self.map.is_black(y, x): self.canvas[y, x] = [0, 0, 255]
 
         # Reward for executing a step.
-        self.reward += len(self.chopper.visited) - self.total_visited
+        self.reward += len(self.chopper.visited) - self.total_visited - 1
         self.total_visited = len(self.chopper.visited)
         # print(f"total visited: {self.total_visited}, reward: {self.reward}")
         
@@ -240,7 +279,7 @@ class ChopperScape(Env):
                 # Delete black point from visited
                 try: temp = np.delete(temp, i, axis=0)
                 except IndexError: continue
-                self.reward -= 1
+                # self.reward -= 1
         
         ch.visited = np.concatenate([ch.visited, temp])
 
@@ -256,7 +295,7 @@ class ChopperScape(Env):
                 # Delete black point from visited
                 try: temp = np.delete(temp, i, axis=0)
                 except IndexError: continue
-                self.reward -= 1
+                # self.reward -= 1
 
         ch.visited = np.concatenate([ch.visited, temp])
 
@@ -274,14 +313,14 @@ def train(env: ChopperScape):
     Q = np.zeros((num_states, num_actions))
 
     # Hyperparameters
-    alpha = 0.1 # Learning rate
+    alpha = 0.15 # Learning rate
     gamma = 0.99  # Discount factor
-    epsilon = 0.2  # Exploration rate
+    epsilon = 0.5  # Exploration rate
 
     # Training loop
     num_episodes = 1000
     for episode in range(num_episodes):
-        state = env.reset()
+        state = env.reset(True)
         total_reward = 0
         done = False
 
@@ -292,7 +331,7 @@ def train(env: ChopperScape):
             else:
                 action = np.argmax(Q[options.index(tuple(state)), :])  # Exploit
 
-            next_state, reward, done, _ = env.step(action)
+            next_state, reward, done, _ = env.step(action, True)
 
             # Update Q-value using Q-learning update rule
             Q[options.index(tuple(state)), action] += alpha * \
@@ -313,26 +352,26 @@ def main():
 
     Q = train(env)
     np.save('Q',Q)
-    # Q = np.load('Q.npy')
-    # options = list(product(range(0, 11), repeat=4))
+    Q = np.load('Q.npy')
+    options = list(product(range(0, 11), repeat=4))
 
-    # for _ in range(10):
+    for _ in range(10):
 
-    #     state = env.reset()
+        state = env.reset(False)
 
-    #     while True:
-    #         # Take an action
-    #         action = np.argmax(Q[options.index(tuple(state)), :])
-    #         # action = env.action_space.sample()
-    #         state, reward, done, info = env.step(action)
-    #         # print(state)
+        while True:
+            # Take an action
+            action = np.argmax(Q[options.index(tuple(state)), :])
+            # action = env.action_space.sample()
+            state, reward, done, info = env.step(action, False)
+            # print(state)
             
-    #         # Render the game
-    #         env.render(mode='human')
-    #         env.canvas = np.ones(env.observation_shape) * 1
+            # Render the game
+            env.render(mode='human')
+            env.canvas = np.ones(env.observation_shape) * 1
             
-    #         if done == True:
-    #             break
+            if done == True:
+                break
 
     env.close()
 if __name__ == "__main__":
