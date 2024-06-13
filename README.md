@@ -37,6 +37,6 @@ python main.py
 ![Map](pictures/map.png)
 
 <video width="1000" controls>
-  <source src="pictures/Simulation 2024-06-13 23-11-25 - Trim - Trim.mp4" type="mp4">
+  <source src="pictures/Simulation 2024-06-13 23-11-25 - Trim - Trim.mp4" type="video/mp4">
   Your browser does not support the video tag.
 </video>
