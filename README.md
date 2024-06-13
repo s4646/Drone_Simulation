@@ -34,4 +34,4 @@ navigate to the main.py file and run the program using python:
 python main.py
 ```
 ## Images:
-![Map](Drone_Simulation/pictures/תמונה1.png)
+![Map](Drone_Simulation/pictures/map.png)
