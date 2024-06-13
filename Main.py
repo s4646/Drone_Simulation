@@ -1,15 +1,15 @@
+import time
 import numpy as np
 from Environment import Environment
 
 def main():
-    path_to_map = "pictures/maps/p11.png"
+    path_to_map = "pictures/maps/p13.png"
     env = Environment(path_to_map)
 
-    done = env.reset()
+    done, t = env.reset()
     while not done:
-
         # Simulation step
-        done = env.step()
+        done, t = env.step(t)
 
         # Render simulation
         env.render(mode='human')

@@ -7,7 +7,6 @@ from Map import Map
 from numba import njit
 from Chopper import Chopper
 from collections import namedtuple
-from ChopperController import ChopperController
 
 font = cv2.FONT_HERSHEY_COMPLEX_SMALL
 
@@ -19,10 +18,6 @@ class Environment(object):
 
         # Define chopper
         self.chopper = Chopper("chopper")
-        self.controller = ChopperController()
-
-        self.velocity = namedtuple('Velocity', ('vX', 'vY'))
-        self.acceleration = namedtuple('Acceleration', ('accX', 'accY'))
         self.max_fuel = 4800
 
 
@@ -54,7 +49,7 @@ class Environment(object):
 
         # Draw the heliopter on canvas
         chopper_shape = self.chopper.icon.shape
-        y, x = self.chopper.y, self.chopper.x
+        y, x = np.round(self.chopper.y), np.round(self.chopper.x)
         self.canvas[int(y - chopper_shape[1]/2) : int(y + chopper_shape[1]/2), int(x - chopper_shape[0]/2 ): int(x + chopper_shape[0]/2)] = self.chopper.rotate_icon()
 
         text = 'Fuel Left: {}'.format(self.fuel_left)
@@ -67,7 +62,7 @@ class Environment(object):
         assert mode in ["human", "rgb_array"], "Invalid mode, must be either \"human\" or \"rgb_array\""
         if mode == "human":
             cv2.imshow("Simulation", self.canvas)
-            cv2.waitKey(100)
+            cv2.waitKey(1)
         
         elif mode == "rgb_array":
             return self.canvas
@@ -87,14 +82,14 @@ class Environment(object):
         ch = self.chopper
         danger_meter = [0, 0, 0, 0] # how close each sensor is to a wall
 
-        temp = ch.interpolate_pixels_along_line(ch.sensors[0][0], ch.sensors[0][1], ch.sensors[2][0], ch.sensors[2][1])
+        temp = ch.interpolate_pixels_along_line(ch.sensors[1][0], ch.sensors[1][1], ch.sensors[3][0], ch.sensors[3][1])
         for i, point in enumerate(temp):
             if self.map.is_black(point[0], point[1]):
                 # Count danger                
-                dist_top = np.sqrt((ch.sensors[0][0] - point[0]) ** 2) + np.sqrt((ch.sensors[0][1] - point[1]) ** 2)
-                dist_bottom = np.sqrt((ch.sensors[2][0] - point[0]) ** 2) + np.sqrt((ch.sensors[2][1] - point[1]) ** 2)
-                if dist_top < dist_bottom: danger_meter[0] += 1
-                else: danger_meter[2] += 1
+                dist_top = np.sqrt((ch.sensors[1][0] - point[0]) ** 2) + np.sqrt((ch.sensors[1][1] - point[1]) ** 2)
+                dist_bottom = np.sqrt((ch.sensors[3][0] - point[0]) ** 2) + np.sqrt((ch.sensors[3][1] - point[1]) ** 2)
+                if dist_top < dist_bottom: danger_meter[1] += 1
+                else: danger_meter[3] += 1
                 
                 # Delete black point from visited
                 try: temp = np.delete(temp, i, axis=0)
@@ -102,14 +97,14 @@ class Environment(object):
         
         ch.visited = np.concatenate([ch.visited, temp])
 
-        temp = ch.interpolate_pixels_along_line(ch.sensors[1][0], ch.sensors[1][1], ch.sensors[3][0], ch.sensors[3][1])
+        temp = ch.interpolate_pixels_along_line(ch.sensors[2][0], ch.sensors[2][1], ch.sensors[0][0], ch.sensors[0][1])
         for i, point in enumerate(temp):
             if self.map.is_black(point[0], point[1]):
                 # Count danger
-                dist_right = np.sqrt((ch.sensors[1][0] - point[0]) ** 2) + np.sqrt((ch.sensors[1][1] - point[1]) ** 2)
-                dist_left = np.sqrt((ch.sensors[3][0] - point[0]) ** 2) + np.sqrt((ch.sensors[3][1] - point[1]) ** 2)
-                if dist_right < dist_left: danger_meter[1] += 1
-                else: danger_meter[3] += 1
+                dist_right = np.sqrt((ch.sensors[2][0] - point[0]) ** 2) + np.sqrt((ch.sensors[2][1] - point[1]) ** 2)
+                dist_left = np.sqrt((ch.sensors[0][0] - point[0]) ** 2) + np.sqrt((ch.sensors[0][1] - point[1]) ** 2)
+                if dist_right < dist_left: danger_meter[2] += 1
+                else: danger_meter[0] += 1
 
                 # Delete black point from visited
                 try: temp = np.delete(temp, i, axis=0)
@@ -121,14 +116,18 @@ class Environment(object):
         return danger_meter
     
     def reset(self):
+        # Measure time
+        t = time.time()
+
         # Reset the fuel consumed
         self.fuel_left = self.max_fuel
         # Reset scanned area (visited pixels)
         self.total_visited = 0
 
         # Determine a place to intialise the chopper in
-        x = 100 # 700
-        y = 80  # 400
+        x = 100  # 700
+        y = 80   # 400
+        self.chopper.start_point = y, x
 
         # Intialise the chopper
         self.chopper = Chopper("chopper")
@@ -139,32 +138,42 @@ class Environment(object):
         # Reset the Canvas 
         self.canvas = np.ones(self.observation_shape) * 1
         
-        return False
+        return False, t
 
-    def step(self):
+    def step(self, t):
+        # Compute time
+        delta_time = time.time()-t
+        t = time.time()
+        
         # Flag that marks the termination of an episode
         done = False
 
         # Scan area and check collision danger meter
         danger_meter = self.scan_area()
-        # print(f"danger meter: {danger_meter}")
+        print(f"danger meter: {danger_meter}")
 
-        # Take action
-        print(danger_meter)
-        p, r, y = 0, 0, 0
-        if danger_meter[3] < 10: r = -1
-        else: r = 1
-        if danger_meter[0] < 10: p = -1
-        else: p = 1
-        if danger_meter[3] != 0 and danger_meter[0] != 0: y = 2
-        else: y = 0
+        # Compute distance by time * velocity(=5)
+        distance = delta_time*5
         
-        print(f"desired: {p}, {r}, {y}")
-        p, r = self.controller.update(p, self.chopper.pitch, r, self.chopper.roll)
-        print(f"actual: {p}, {r}, {y}")
+        # Take action
+        if danger_meter[1] != 0:
+            if danger_meter[0] != 0:
+                self.chopper.angle += (danger_meter[1] + danger_meter[0])//20
+            elif danger_meter[2] != 0:
+                self.chopper.angle -= (danger_meter[1] + danger_meter[2])//20
+            
+            if danger_meter[1] >= 45:
+                if danger_meter[0] > danger_meter[2]: self.chopper.angle += 90
+                else: self.chopper.angle -= 90
+        
+        if danger_meter[0] >= 45:
+            self.chopper.angle += danger_meter[0]//20
+        if danger_meter[2] >= 45:
+            self.chopper.angle -= danger_meter[2]//20
 
-        self.chopper.set_pitch_roll_yaw(p, r, y)
-        self.chopper.move(self.chopper.pitch, self.chopper.roll, self.chopper.angle)
+
+        y, x = self.chopper.get_point_by_distance(self.chopper.angle, distance)
+        self.chopper.set_position(y, x)
         self.chopper.create_tips()
         self.chopper.create_sensors()
 
@@ -189,6 +198,4 @@ class Environment(object):
         if self.has_collided(): done = True # If chopper has collided, end the episode       
         if self.fuel_left == 0: done = True # If out of fuel, end the episode.
 
-        # print(f"Pitch: {self.pitch}, Roll: {self.roll}, Yaw: {self.yaw}")
-        # print(f"Position: {self.chopper.y}, {self.chopper.x}")
-        return done
+        return done, t

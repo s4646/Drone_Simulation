@@ -14,12 +14,14 @@ class Point(object):
     def get_position(self):
         return (self.y, self.x)
 
-    def move(self, pitch, roll, angle):
-            angle_rad = math.radians(angle)
+    def get_point_by_distance(self, angle: float, distance: float):
+        angle_rad = np.deg2rad(angle)
+        i = distance
+        
+        y = self.y + i*np.sin(angle_rad)
+        x = self.x + i*np.cos(angle_rad)
 
-            self.y += int(np.round(pitch * math.sin(angle_rad))) if math.sin(angle_rad) != 0 else pitch
-            self.x += int(np.round(roll * math.cos(angle_rad))) if math.cos(angle_rad) != 0 else roll
-
+        return y, x
 
     @staticmethod
     @njit

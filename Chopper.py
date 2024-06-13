@@ -8,22 +8,17 @@ class Chopper(Point):
     def __init__(self, name):
         super(Chopper, self).__init__(name)
         self.icon = cv2.imread("pictures/drone.png") / 255.0
+        
+        self.angle = -90
+        self.start_point = None
+        
+        
         self.icon_w = 8
         self.icon_h = 8
         self.icon = cv2.resize(self.icon, (self.icon_h, self.icon_w))
         self.tips = []
         self.sensors = []
         self.visited = np.empty((0, 2))
-
-        self.pitch = 0
-        self.roll = 0
-        self.angle = 0
-
-    def set_pitch_roll_yaw(self, pitch, roll, yaw):
-        if self.pitch > -2 and self.pitch < 2: self.pitch += pitch
-        if self.roll > -2 and self.roll < 2: self.roll += roll
-        self.angle += yaw
-        print(f"Total: {self.pitch}, {self.roll}, {self.angle}")
 
     def create_tips(self):
         y, x = self.get_position()
@@ -47,16 +42,16 @@ class Chopper(Point):
         y, x = self.get_position()
         angle_rad = math.radians(self.angle)
 
-        top_sensor_coord = y-self.icon_h-20, x
+        top_sensor_coord = y-self.icon_h-32, x
         top_sensor = self.rotate((y,x), top_sensor_coord, angle_rad) 
 
-        right_sensor_coord = y, x+self.icon_w+20
+        right_sensor_coord = y, x+self.icon_w+32
         right_sensor = self.rotate((y,x), right_sensor_coord, angle_rad)
 
-        bottom_sensor_coord = y+self.icon_h+20, x
+        bottom_sensor_coord = y+self.icon_h+32, x
         bottom_sensor = self.rotate((y,x), bottom_sensor_coord, angle_rad)
 
-        left_sensor_coord = y, x-self.icon_w-20
+        left_sensor_coord = y, x-self.icon_w-32
         left_sensor = self.rotate((y,x), left_sensor_coord, angle_rad)
         
         self.sensors = [top_sensor, right_sensor, bottom_sensor, left_sensor]
